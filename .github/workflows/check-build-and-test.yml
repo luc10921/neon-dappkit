@@ -1,4 +1,7 @@
-name: Check Build and Test
+name: 'Check Build and Test'
+
+permissions:
+  checks: write
 on:
   pull_request:
     branches:
@@ -14,7 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          fetch-depth: 2
+          fetch-depth: 10
       - name: Setup Node Version ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v3
         with:
@@ -31,20 +34,17 @@ jobs:
         run: rush rebuild --verbose
       - name: Run Tests
         run: cd packages/neon-dappkit && pnpm test
-      - name: Notify Test Reporter
+      - uses: actions/upload-artifact@v4
         if: ${{ always() }}
-        uses: dorny/test-reporter@v1.6.0
         with:
-          name: Unit Tests
-          reporter: mocha-json
+          name: test-results
           path: mocha-results.json
-          fail-on-error: true
       - name: Check Code Coverage
         continue-on-error: true
         working-directory: ./packages/neon-dappkit/
         run: pnpm coverage
-      - name: Notify Code Coverage
-        uses: sidx1024/report-nyc-coverage-github-action@v1.2.7
+      - name: Upload Coverage Summary
+        uses: actions/upload-artifact@v4
         with:
-          coverage_file: './packages/neon-dappkit/reporter/coverage-summary.json'
-          comment_template_file: '.github/comment-template.md'
+          name: coverage-summary
+          path: ./packages/neon-dappkit/reporter/coverage-summary.json

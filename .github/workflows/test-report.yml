@@ -1,0 +1,44 @@
+name: 'Test and Coverage Report'
+on:
+  workflow_run:
+    workflows: ['Check Build and Test']
+    types:
+      - completed
+
+permissions:
+  contents: read
+  actions: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Coverage Summary Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-summary
+          path: ./artifacts/coverage
+          repository: CityOfZion/neon-dappkit
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download test results Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results
+          path: ./artifacts/
+          repository: CityOfZion/neon-dappkit
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Notify Code Coverage
+        uses: sidx1024/report-nyc-coverage-github-action@v1.2.7
+        with:
+          coverage_file: './artifacts/coverage/coverage-summary.json'
+          comment_template_file: '.github/comment-template.md'
+      - uses: dorny/test-reporter@v2
+        with:
+          name: Unit Tests
+          path: './artifacts/mocha-results.json'
+          reporter: mocha-json
+          max-annotations: 0
